@@ -6,6 +6,7 @@
 #include <sys/time.h>
 #include <omp.h>
 #define N 1024
+#define ITER 10
 using namespace cv::hal_baseline;
 int main()
 {
@@ -29,49 +30,56 @@ int main()
 
   struct timeval time1;
   struct timeval time2;
-  float diff_time;
+  float diff_time=0;
   gettimeofday(&time1, NULL);
   // //SIMDなし実行
+  for(int s=0;s<ITER;s++){
 #pragma omp parallel for
-  for(int i=0;i<N;i++){
-    for(int k=0;k<N;k++){
-      for(int j=0;j<N;j++){
-	c[((i*N)+j)] += a[((i*N)+k)] * b[((k*N)+j)];
+    for(int i=0;i<N;i++){
+      for(int k=0;k<N;k++){
+	for(int j=0;j<N;j++){
+	  c[((i*N)+j)] += a[((i*N)+k)] * b[((k*N)+j)];
+	}
       }
     }
   }
   gettimeofday(&time2, NULL);
-  diff_time = time2.tv_sec - time1.tv_sec +  (float)(time2.tv_usec - time1.tv_usec) / 1000000;
-  printf("diff: %f[s]\n", diff_time);
+  diff_time += time2.tv_sec - time1.tv_sec +  (float)(time2.tv_usec - time1.tv_usec) / 1000000;
+  printf("diff: %f[s]\n", diff_time/ITER);
+  diff_time = 0;
 #ifdef CV_SIMD
 #if CV_SIMD256
   //SIMD実行
   gettimeofday(&time1, NULL);
+  for(int s=0;s<ITER;s++){
 #pragma omp parallel for
-  for(int i=0;i<N;i++){
-    for(int j=0;j<N;j+=8){
-      v_float32x8 c_vec = vx_setall_f32(0);
-      for(int k=0;k<N;k++){
-	float *ptr = b + j + k * N;
-	v_float32x8 b_vec = v256_load(ptr);
-	v_float32x8 a_vec = vx_setall_f32(a[(i*N)+k]);
-	// c_vec += a_vec*b_vec;
-	c_vec = v_fma(a_vec,b_vec,c_vec);
+    for(int i=0;i<N;i++){
+      for(int j=0;j<N;j+=8){
+	v_float32x8 c_vec = vx_setall_f32(0);
+	for(int k=0;k<N;k++){
+	  float *ptr = b + j + k * N;
+	  v_float32x8 b_vec = v256_load(ptr);
+	  v_float32x8 a_vec = vx_setall_f32(a[(i*N)+k]);
+	  c_vec = v_fma(a_vec,b_vec,c_vec);
+	}
+	v_store(c+i*N+j,c_vec);      
       }
-      v_store(c+i*N+j,c_vec);      
     }
   }
   gettimeofday(&time2, NULL);
-  diff_time = time2.tv_sec - time1.tv_sec +  (float)(time2.tv_usec - time1.tv_usec) / 1000000;
-  printf("diff: %f[s]\n", diff_time);
+  diff_time += time2.tv_sec - time1.tv_sec +  (float)(time2.tv_usec - time1.tv_usec) / 1000000;
+  printf("diff: %f[s]\n", diff_time/ITER);
+  diff_time = 0;
 #endif
 #endif
   //OpenCV実行
-  gettimeofday(&time1, NULL);
-  ref_C=A*B;
-  gettimeofday(&time2, NULL);
-  diff_time = time2.tv_sec - time1.tv_sec +  (float)(time2.tv_usec - time1.tv_usec) / 1000000;
-  printf("diff: %f[s]\n", diff_time);
+  for(int s=0;s<ITER;s++){
+    gettimeofday(&time1, NULL);
+    ref_C=A*B;
+    gettimeofday(&time2, NULL);
+  }
+  diff_time += time2.tv_sec - time1.tv_sec +  (float)(time2.tv_usec - time1.tv_usec) / 1000000;
+  printf("diff: %f[s]\n", diff_time/ITER);
   std::cout<< ref_C.at<float>(100,0) <<"," << C.at<float>(100,0) <<std::endl;
   cv::absdiff(C,ref_C,err);
   err = err/cv::abs(ref_C);
