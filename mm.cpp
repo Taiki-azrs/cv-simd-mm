@@ -6,7 +6,7 @@
 #include <sys/time.h>
 #include <omp.h>
 #define N 1024
-#define ITER 1
+#define ITER 10
 using namespace cv::hal_baseline;
 int main()
 {
@@ -31,9 +31,10 @@ int main()
   struct timeval time1;
   struct timeval time2;
   float diff_time=0;
-  gettimeofday(&time1, NULL);
+
   // //SIMDなし実行
   for(int s=0;s<ITER;s++){
+    gettimeofday(&time1, NULL);
 #pragma omp parallel for
     for(int i=0;i<N;i++){
       for(int k=0;k<N;k++){
@@ -44,15 +45,17 @@ int main()
     }
 
   gettimeofday(&time2, NULL);
-  diff_time += time2.tv_sec - time1.tv_sec +  (float)(time2.tv_usec - time1.tv_usec) / 1000000;
+  diff_time += time2.tv_sec - time1.tv_sec +
+    (float)(time2.tv_usec - time1.tv_usec) / 1000000;
   }
   printf("diff: %f[s]\n", diff_time/ITER);
   diff_time = 0;
 #ifdef CV_SIMD
 #if CV_SIMD256
   //SIMD実行
-  gettimeofday(&time1, NULL);
+
   for(int s=0;s<ITER;s++){
+    gettimeofday(&time1, NULL);
 #pragma omp parallel for
     for(int i=0;i<N;i++){
       for(int j=0;j<N;j+=8){
