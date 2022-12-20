@@ -6,7 +6,7 @@
 #include <sys/time.h>
 #include <omp.h>
 #define N 1024
-#define ITER 10
+#define ITER 1
 using namespace cv::hal_baseline;
 int main()
 {
@@ -42,9 +42,10 @@ int main()
 	}
       }
     }
-  }
+
   gettimeofday(&time2, NULL);
   diff_time += time2.tv_sec - time1.tv_sec +  (float)(time2.tv_usec - time1.tv_usec) / 1000000;
+  }
   printf("diff: %f[s]\n", diff_time/ITER);
   diff_time = 0;
 #ifdef CV_SIMD
@@ -65,9 +66,10 @@ int main()
 	v_store(c+i*N+j,c_vec);      
       }
     }
-  }
+
   gettimeofday(&time2, NULL);
   diff_time += time2.tv_sec - time1.tv_sec +  (float)(time2.tv_usec - time1.tv_usec) / 1000000;
+  }
   printf("diff: %f[s]\n", diff_time/ITER);
   diff_time = 0;
 #endif
@@ -77,8 +79,9 @@ int main()
     gettimeofday(&time1, NULL);
     ref_C=A*B;
     gettimeofday(&time2, NULL);
-  }
+
   diff_time += time2.tv_sec - time1.tv_sec +  (float)(time2.tv_usec - time1.tv_usec) / 1000000;
+  }
   printf("diff: %f[s]\n", diff_time/ITER);
   std::cout<< ref_C.at<float>(100,0) <<"," << C.at<float>(100,0) <<std::endl;
   cv::absdiff(C,ref_C,err);
