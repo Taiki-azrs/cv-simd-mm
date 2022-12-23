@@ -5,19 +5,17 @@
 #include <opencv2/core/simd_intrinsics.hpp>
 #include <sys/time.h>
 #include <omp.h>
-#define N 1024
-#define ITER 10
 using namespace cv::hal_baseline;
 int main()
 {
   
-  cv::Mat A = cv::Mat::zeros(N,N,CV_32FC1);
-  cv::Mat B = cv::Mat::zeros(N,N,CV_32FC1);
-  cv::Mat C = cv::Mat::zeros(N,N,CV_32FC1);
-  cv::Mat ref_C = cv::Mat::zeros(N,N,CV_32FC1);
-  cv::Mat err = cv::Mat::zeros(N,N,CV_32FC1);
-  for(int i=0;i<N;i++){
-    for(int j=0;j<N;j++){
+  cv::Mat A = cv::Mat::zeros(SIZE,SIZE,CV_32FC1);
+  cv::Mat B = cv::Mat::zeros(SIZE,SIZE,CV_32FC1);
+  cv::Mat C = cv::Mat::zeros(SIZE,SIZE,CV_32FC1);
+  cv::Mat ref_C = cv::Mat::zeros(SIZE,SIZE,CV_32FC1);
+  cv::Mat err = cv::Mat::zeros(SIZE,SIZE,CV_32FC1);
+  for(int i=0;i<SIZE;i++){
+    for(int j=0;j<SIZE;j++){
       A.at<float>(i,j) = rand()/32767.0;
       B.at<float>(i,j) = rand()/32767.0;
       // A.at<float>(i,j) = 1.0;
@@ -36,10 +34,10 @@ int main()
   for(int s=0;s<ITER;s++){
     gettimeofday(&time1, NULL);
 #pragma omp parallel for
-    for(int i=0;i<N;i++){
-      for(int k=0;k<N;k++){
-	for(int j=0;j<N;j++){
-	  c[((i*N)+j)] += a[((i*N)+k)] * b[((k*N)+j)];
+    for(int i=0;i<SIZE;i++){
+      for(int k=0;k<SIZE;k++){
+	for(int j=0;j<SIZE;j++){
+	  c[((i*SIZE)+j)] += a[((i*SIZE)+k)] * b[((k*SIZE)+j)];
 	}
       }
     }
@@ -57,16 +55,16 @@ int main()
   for(int s=0;s<ITER;s++){
     gettimeofday(&time1, NULL);
 #pragma omp parallel for
-    for(int i=0;i<N;i++){
-      for(int j=0;j<N;j+=8){
+    for(int i=0;i<SIZE;i++){
+      for(int j=0;j<SIZE;j+=8){
 	v_float32x8 c_vec = vx_setall_f32(0);
-	for(int k=0;k<N;k++){
-	  float *ptr = b + j + k * N;
+	for(int k=0;k<SIZE;k++){
+	  float *ptr = b + j + k * SIZE;
 	  v_float32x8 b_vec = v256_load(ptr);
-	  v_float32x8 a_vec = vx_setall_f32(a[(i*N)+k]);
+	  v_float32x8 a_vec = vx_setall_f32(a[(i*SIZE)+k]);
 	  c_vec = v_fma(a_vec,b_vec,c_vec);
 	}
-	v_store(c+i*N+j,c_vec);      
+	v_store(c+i*SIZE+j,c_vec);      
       }
     }
 

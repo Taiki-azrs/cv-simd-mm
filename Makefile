@@ -1,14 +1,15 @@
-CC = g++ 
-CFLAGS = -I/usr/local/include/opencv4/ -L/usr/local/lib -lopencv_core -fopenmp 
+CC = g++
+CFLAGS =  -O0 -I/usr/local/include/opencv4/ -L/usr/local/lib -lopencv_core -fopenmp -mavx2 
 SRCS = $(wildcard *.cpp)
 OBJS = $(SRCS:.cpp=)
 all: $(OBJS)
 
 .cpp: 
-	$(CC) $^ -o $@ $(CFLAGS)
+	$(CC) -DSIZE=512 -DITER=100 $^ -o $@ $(CFLAGS)
+	$(CC) -DSIZE=512 -DITER=100 $^ -S -g $(CFLAGS)
 
 .PHONY: clean
 
 clean:
-	$(RM) $(OBJS) $(TARGET)
+	$(RM) $(OBJS) *.s
 
