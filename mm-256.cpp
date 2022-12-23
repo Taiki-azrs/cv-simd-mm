@@ -51,20 +51,19 @@ int main()
   printf("diff: %f[s]\n", diff_time/ITER);
   diff_time = 0;
 #ifdef CV_SIMD
+#if CV_SIMD256
+  //SIMD実行
 
-
-  int step=v_float32().nlanes;
-  std::cout<<"SIMD lanes:" << step<<std::endl;
   for(int s=0;s<ITER;s++){
     gettimeofday(&time1, NULL);
 #pragma omp parallel for
     for(int i=0;i<N;i++){
-      for(int j=0;j<N;j+=step){
-	v_float32 c_vec = vx_setall_f32(0);
+      for(int j=0;j<N;j+=8){
+	v_float32x8 c_vec = vx_setall_f32(0);
 	for(int k=0;k<N;k++){
 	  float *ptr = b + j + k * N;
-	  v_float32 b_vec = vx_load(ptr);
-	  v_float32 a_vec = vx_setall_f32(a[(i*N)+k]);
+	  v_float32x8 b_vec = v256_load(ptr);
+	  v_float32x8 a_vec = vx_setall_f32(a[(i*N)+k]);
 	  c_vec = v_fma(a_vec,b_vec,c_vec);
 	}
 	v_store(c+i*N+j,c_vec);      
@@ -76,6 +75,7 @@ int main()
   }
   printf("diff: %f[s]\n", diff_time/ITER);
   diff_time = 0;
+#endif
 #endif
   //OpenCV実行
   for(int s=0;s<ITER;s++){
