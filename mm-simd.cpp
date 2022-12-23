@@ -27,25 +27,6 @@ int main()
   struct timeval time1;
   struct timeval time2;
   float diff_time=0;
-
-  // //SIMDなし実行
-  for(int s=0;s<ITER;s++){
-    gettimeofday(&time1, NULL);
-#pragma omp parallel for
-    for(int i=0;i<SIZE;i++){
-      for(int k=0;k<SIZE;k++){
-	for(int j=0;j<SIZE;j++){
-	  c[((i*SIZE)+j)] += a[((i*SIZE)+k)] * b[((k*SIZE)+j)];
-	}
-      }
-    }
-
-  gettimeofday(&time2, NULL);
-  diff_time += time2.tv_sec - time1.tv_sec +
-    (float)(time2.tv_usec - time1.tv_usec) / 1000000;
-  }
-  printf("diff: %f[s]\n", diff_time/ITER);
-  diff_time = 0;
 #ifdef CV_SIMD
 
 
@@ -78,6 +59,7 @@ int main()
     gettimeofday(&time1, NULL);
     ref_C=A*B;
     gettimeofday(&time2, NULL);
+
   diff_time += time2.tv_sec - time1.tv_sec +  (float)(time2.tv_usec - time1.tv_usec) / 1000000;
   }
   printf("diff: %f[s]\n", diff_time/ITER);
