@@ -44,7 +44,7 @@ int main()
   diff_time += time2.tv_sec - time1.tv_sec +
     (float)(time2.tv_usec - time1.tv_usec) / 1000000;
   }
-  printf("diff: %f[s]\n", diff_time/ITER);
+  printf("SIMDなし: %f[s]\n", diff_time/ITER);
   diff_time = 0;
 #ifdef CV_SIMD
 
@@ -70,7 +70,7 @@ int main()
   gettimeofday(&time2, NULL);
   diff_time += time2.tv_sec - time1.tv_sec +  (float)(time2.tv_usec - time1.tv_usec) / 1000000;
   }
-  printf("diff: %f[s]\n", diff_time/ITER);
+  printf("SIMD有り: %f[s]\n", diff_time/ITER);
   diff_time = 0;
 #endif
   //OpenCV実行
@@ -80,7 +80,7 @@ int main()
     gettimeofday(&time2, NULL);
   diff_time += time2.tv_sec - time1.tv_sec +  (float)(time2.tv_usec - time1.tv_usec) / 1000000;
   }
-  printf("diff: %f[s]\n", diff_time/ITER);
+  printf("OpenCV: %f[s]\n", diff_time/ITER);
   std::cout<< ref_C.at<float>(100,0) <<"," << C.at<float>(100,0) <<std::endl;
   cv::absdiff(C,ref_C,err);
   err = err/cv::abs(ref_C);

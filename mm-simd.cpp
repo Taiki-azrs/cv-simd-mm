@@ -18,8 +18,6 @@ int main()
     for(int j=0;j<SIZE;j++){
       A.at<float>(i,j) = rand()/32767.0;
       B.at<float>(i,j) = rand()/32767.0;
-      // A.at<float>(i,j) = 1.0;
-      // B.at<float>(i,j) = 1.0;
     }
   }
   float *c=(float*)C.data;
@@ -30,38 +28,21 @@ int main()
   struct timeval time2;
   float diff_time=0;
 
-  // //SIMDなし実行
-  for(int s=0;s<ITER;s++){
-    gettimeofday(&time1, NULL);
-#pragma omp parallel for
-    for(int i=0;i<SIZE;i++){
-      for(int k=0;k<SIZE;k++){
-	for(int j=0;j<SIZE;j++){
-	  c[((i*SIZE)+j)] += a[((i*SIZE)+k)] * b[((k*SIZE)+j)];
-	}
-      }
-    }
-
-  gettimeofday(&time2, NULL);
-  diff_time += time2.tv_sec - time1.tv_sec +
-    (float)(time2.tv_usec - time1.tv_usec) / 1000000;
-  }
-  printf("SIMDなし: %f[s]\n", diff_time/ITER);
-  diff_time = 0;
 #ifdef CV_SIMD
-#if CV_SIMD256
-  //SIMD実行
 
+
+  int step=v_float32().nlanes;
+  std::cout<<"SIMD lanes:" << step<<std::endl;
   for(int s=0;s<ITER;s++){
     gettimeofday(&time1, NULL);
 #pragma omp parallel for
     for(int i=0;i<SIZE;i++){
-      for(int j=0;j<SIZE;j+=8){
-	v_float32x8 c_vec = vx_setall_f32(0);
+      for(int j=0;j<SIZE;j+=step){
+	v_float32 c_vec = vx_setall_f32(0);
 	for(int k=0;k<SIZE;k++){
 	  float *ptr = b + j + k * SIZE;
-	  v_float32x8 b_vec = v256_load(ptr);
-	  v_float32x8 a_vec = vx_setall_f32(a[(i*SIZE)+k]);
+	  v_float32 b_vec = vx_load(ptr);
+	  v_float32 a_vec = vx_setall_f32(a[(i*SIZE)+k]);
 	  c_vec = v_fma(a_vec,b_vec,c_vec);
 	}
 	v_store(c+i*SIZE+j,c_vec);      
@@ -71,19 +52,17 @@ int main()
   gettimeofday(&time2, NULL);
   diff_time += time2.tv_sec - time1.tv_sec +  (float)(time2.tv_usec - time1.tv_usec) / 1000000;
   }
-  printf("SIMD有り: %f[s]\n", diff_time/ITER);
+  printf("diff: %f[s]\n", diff_time/ITER);
   diff_time = 0;
-#endif
 #endif
   //OpenCV実行
   for(int s=0;s<ITER;s++){
     gettimeofday(&time1, NULL);
     ref_C=A*B;
     gettimeofday(&time2, NULL);
-
   diff_time += time2.tv_sec - time1.tv_sec +  (float)(time2.tv_usec - time1.tv_usec) / 1000000;
   }
-  printf("OpenCV: %f[s]\n", diff_time/ITER);
+  printf("diff: %f[s]\n", diff_time/ITER);
   std::cout<< ref_C.at<float>(100,0) <<"," << C.at<float>(100,0) <<std::endl;
   cv::absdiff(C,ref_C,err);
   err = err/cv::abs(ref_C);
